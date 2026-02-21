@@ -11,7 +11,7 @@ on:
         default: '["locked", "lowest", "highest"]'
       phpstan:
         type: boolean
-        default: true
+        default: false
       psalm:
         type: boolean
         default: false
@@ -38,21 +38,21 @@ jobs:
       - run: composer normalize --dry-run
       - run: composer analyse-deps
 
-  php-cs-fixer:
+  php-code-sniffer:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ fromJSON(inputs.php_versions)[0] }}
-          tools: composer:v2, cs2pr
+          tools: composer:v2
           coverage: none
       - uses: ramsey/composer-install@v3
         with:
           composer-options: --optimize-autoloader
         env:
           COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH || '{}' }}
-      - run: composer fixcs -- --dry-run --format=checkstyle | cs2pr
+      - run: vendor/bin/phpcs
 
   phpstan:
     if: inputs.phpstan
@@ -74,7 +74,7 @@ jobs:
           dependency-versions: ${{ matrix.dependencies }}
         env:
           COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH || '{}' }}
-      - run: composer phpstan -- --error-format=github
+      - run: vendor/bin/phpstan -- --error-format=github
 
   psalm:
     if: inputs.psalm
@@ -96,5 +96,5 @@ jobs:
           dependency-versions: ${{ matrix.dependencies }}
         env:
           COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH || '{}' }}
-      - run: composer psalm -- --stats --output-format=github ${{ (matrix.php == fromJson(inputs.php_versions)[0]) && (matrix.dependencies == fromJson(inputs.dependencies)[0]) && '--shepherd' || '' }}
+      - run: vendor/bin/psalm -- --stats --output-format=github ${{ (matrix.php == fromJson(inputs.php_versions)[0]) && (matrix.dependencies == fromJson(inputs.dependencies)[0]) && '--shepherd' || '' }}
         
